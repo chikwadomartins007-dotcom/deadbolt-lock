@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PRODUCT_DATA } from './data/productData';
-import { initMetaPixel, trackViewContent, trackInitiateCheckout } from './utils/pixel';
+import { initAllPixels, trackViewContent, trackInitiateCheckout, trackPurchase } from './utils/pixel';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { ImageGallery } from './components/ImageGallery';
@@ -29,9 +29,24 @@ export default function App() {
   const [hasCompletedOrder, setHasCompletedOrder] = useState(false);
 
   useEffect(() => {
-    // Initialize Meta Pixel (if configured) and track ViewContent
-    initMetaPixel();
+    // Initialize both Meta Pixel (1690563088540181) and TikTok Pixel (DBNK5NJC77U6CGRG7ETG)
+    initAllPixels();
     trackViewContent(PRODUCT_DATA.productName, PRODUCT_DATA.sellingPrice, 'NGN');
+
+    // Enable instant test trigger when URL has ?test_purchase=1
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('test_purchase') === '1' || searchParams.get('test_purchase') === 'true') {
+        const testRef = 'ML-TEST-' + Math.floor(100000 + Math.random() * 900000);
+        trackPurchase(testRef, PRODUCT_DATA.sellingPrice, 'NGN', {
+          fullName: 'Test Buyer',
+          phoneNumber: '08147778029',
+          city: 'Lagos',
+          state: 'Lagos',
+          quantity: 1,
+        });
+      }
+    }
   }, []);
 
   const openQuickOrder = () => {

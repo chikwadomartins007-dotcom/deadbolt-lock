@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PRODUCT_DATA, NIGERIAN_STATES } from '../data/productData';
-import { trackLeadOrderSubmitted, trackContact } from '../utils/pixel';
+import { trackPurchase, trackLeadOrderSubmitted, trackContact } from '../utils/pixel';
 import {
   X,
   Zap,
@@ -275,8 +275,8 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       };
       setOrderConfirmation(confirmationRecord);
 
-      // 5. Trigger Meta Pixel & CAPI Lead event with full EMQ matching parameters
-      trackLeadOrderSubmitted(generatedRef, subtotal, 'NGN', {
+      // 5. Trigger Meta & TikTok Purchase event (with CAPI and Events API server sync)
+      trackPurchase(generatedRef, subtotal, 'NGN', {
         fullName: fullName.trim(),
         phoneNumber: phoneNumber.trim(),
         whatsappNumber: whatsappNumber.trim() || phoneNumber.trim(),
@@ -286,10 +286,37 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         quantity: quantity,
       });
 
+      // Update URL query string for URL-based pixel rules and Meta Event Setup Tool
+      if (typeof window !== 'undefined' && window.history && window.history.pushState) {
+        window.history.pushState(
+          { orderId: generatedRef },
+          '',
+          `${window.location.pathname}?order_success=true&order_id=${generatedRef}#quick-order-confirmation`
+        );
+      }
+
       if (onOrderSuccess) onOrderSuccess();
     } catch (err) {
       console.error('Quick order submit fallback:', err);
-      // Guarantee confirmation view
+      // Guarantee confirmation view and fire purchase tracking
+      trackPurchase(generatedRef, subtotal, 'NGN', {
+        fullName: fullName.trim(),
+        phoneNumber: phoneNumber.trim(),
+        whatsappNumber: whatsappNumber.trim() || phoneNumber.trim(),
+        city: selectedState,
+        state: selectedState,
+        address: deliveryAddress.trim(),
+        quantity: quantity,
+      });
+
+      if (typeof window !== 'undefined' && window.history && window.history.pushState) {
+        window.history.pushState(
+          { orderId: generatedRef },
+          '',
+          `${window.location.pathname}?order_success=true&order_id=${generatedRef}#quick-order-confirmation`
+        );
+      }
+
       setOrderConfirmation({
         referenceNumber: generatedRef,
         fullName: fullName.trim(),
@@ -818,6 +845,9 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
               {/* Submit CTA */}
               <button
                 type="submit"
+                id="quick-purchase-submit-button"
+                data-event="Purchase"
+                data-track-event="Purchase"
                 disabled={isSubmitting}
                 className={`w-full py-3.5 px-6 rounded-xl bg-[#F5C518] hover:bg-[#E5B810] text-black font-black text-sm uppercase tracking-wider border-2 border-black shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   isSubmitting ? 'opacity-70 cursor-not-allowed' : 'active:scale-98'

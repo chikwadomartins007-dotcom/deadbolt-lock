@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PRODUCT_DATA, NIGERIAN_STATES } from '../data/productData';
-import { trackLeadOrderSubmitted, trackContact } from '../utils/pixel';
+import { trackPurchase, trackLeadOrderSubmitted, trackContact } from '../utils/pixel';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -211,8 +211,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
       };
       setOrderConfirmation(confirmationRecord);
 
-      // 4. Fire Meta Pixel & CAPI Lead tracking with full EMQ identifiers
-      trackLeadOrderSubmitted(generatedRef, subtotal, 'NGN', {
+      // 4. Fire Meta & TikTok Purchase event (with CAPI and Events API server sync)
+      trackPurchase(generatedRef, subtotal, 'NGN', {
         fullName: fullName.trim(),
         phoneNumber: phoneNumber.trim(),
         whatsappNumber: whatsappNumber.trim() || phoneNumber.trim(),
@@ -222,10 +222,37 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
         quantity: quantity,
       });
 
+      // Update URL query string for URL-based pixel rules and Meta Event Setup Tool
+      if (typeof window !== 'undefined' && window.history && window.history.pushState) {
+        window.history.pushState(
+          { orderId: generatedRef },
+          '',
+          `${window.location.pathname}?order_success=true&order_id=${generatedRef}#order-confirmation`
+        );
+      }
+
       if (onSuccess) onSuccess();
     } catch (err: unknown) {
       console.error('Order submission fallback triggered:', err);
-      // Even in the case of unexpected runtime error, guarantee the customer sees their order confirmation
+      // Guarantee order confirmation view and fire tracking even if network hiccups
+      trackPurchase(generatedRef, subtotal, 'NGN', {
+        fullName: fullName.trim(),
+        phoneNumber: phoneNumber.trim(),
+        whatsappNumber: whatsappNumber.trim() || phoneNumber.trim(),
+        city: city.trim() || selectedState,
+        state: selectedState,
+        address: deliveryAddress.trim(),
+        quantity: quantity,
+      });
+
+      if (typeof window !== 'undefined' && window.history && window.history.pushState) {
+        window.history.pushState(
+          { orderId: generatedRef },
+          '',
+          `${window.location.pathname}?order_success=true&order_id=${generatedRef}#order-confirmation`
+        );
+      }
+
       const fallbackConfirmation = {
         referenceNumber: generatedRef,
         fullName: fullName.trim(),
@@ -820,6 +847,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
             <div className="mt-8 space-y-4">
               <button
                 type="submit"
+                id="main-purchase-submit-button"
+                data-event="Purchase"
+                data-track-event="Purchase"
                 disabled={isSubmitting}
                 className={`w-full py-4 px-8 rounded-xl bg-[#F5C518] hover:bg-[#E5B810] text-black font-black text-lg uppercase tracking-wider border-2 border-black shadow-xl shadow-yellow-500/20 transition-all flex items-center justify-center gap-3 cursor-pointer ${
                   isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.01] active:scale-[0.99]'

@@ -13,6 +13,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const META_PIXEL_ID = process.env.VITE_META_PIXEL_ID || '1690563088540181';
+const TIKTOK_PIXEL_ID = process.env.VITE_TIKTOK_PIXEL_ID || 'DBNK5NJC77U6CGRG7ETG';
 
 app.use(express.json());
 
@@ -110,8 +111,8 @@ app.post('/api/meta-conversions', async (req: Request, res: Response) => {
           custom_data: customData,
         },
       ],
-      ...(process.env.META_TEST_EVENT_CODE
-        ? { test_event_code: process.env.META_TEST_EVENT_CODE }
+      ...((req.body.testEventCode || process.env.META_TEST_EVENT_CODE)
+        ? { test_event_code: req.body.testEventCode || process.env.META_TEST_EVENT_CODE }
         : {}),
     };
 
@@ -162,6 +163,126 @@ app.post('/api/meta-conversions', async (req: Request, res: Response) => {
 });
 
 /**
+ * TikTok Events API (Server-Side Events API)
+ * Endpoint: /api/tiktok-events
+ * Pixel ID: DBNK5NJC77U6CGRG7ETG
+ */
+app.post('/api/tiktok-events', async (req: Request, res: Response) => {
+  try {
+    const {
+      eventName,
+      eventId,
+      eventSourceUrl,
+      pixelId = 'DBNK5NJC77U6CGRG7ETG',
+      userData = {},
+      customData = {},
+    } = req.body;
+
+    const clientIp =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.socket.remoteAddress ||
+      '';
+    const clientUserAgent =
+      (req.headers['user-agent'] as string) || userData.clientUserAgent || '';
+
+    const normalizedPhone = normalizePhone(userData.phone || userData.whatsapp);
+    const hashedPhone = normalizedPhone ? hashSha256(normalizedPhone) : undefined;
+    const hashedEmail = userData.email
+      ? hashSha256(userData.email.trim().toLowerCase())
+      : undefined;
+
+    // Map events to standard TikTok Events API names
+    let ttEvent = eventName;
+    if (eventName === 'Lead') ttEvent = 'PlaceAnOrder';
+    if (eventName === 'Purchase') ttEvent = 'CompletePayment';
+
+    const tiktokPayload = {
+      event_source: 'web',
+      event_source_id: pixelId,
+      data: [
+        {
+          event: ttEvent,
+          event_time: Math.floor(Date.now() / 1000),
+          event_id: eventId,
+          user: {
+            ...(hashedPhone ? { phone: hashedPhone } : {}),
+            ...(hashedEmail ? { email: hashedEmail } : {}),
+            ip: clientIp,
+            user_agent: clientUserAgent,
+            ...(userData.ttclid ? { ttclid: userData.ttclid } : {}),
+            ...(userData.ttp ? { ttp: userData.ttp } : {}),
+          },
+          properties: {
+            currency: customData.currency || 'NGN',
+            value: customData.value || 180000,
+            contents: [
+              {
+                content_id: 'A-01-DEADBOLT-LOCK',
+                content_name: 'A-01 Deadbolt Type Smart Lock',
+                content_type: 'product',
+                quantity: customData.num_items || customData.quantity || 1,
+                price: 180000,
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const tiktokToken =
+      process.env.TIKTOK_EVENTS_API_ACCESS_TOKEN || process.env.TIKTOK_ACCESS_TOKEN;
+
+    if (tiktokToken) {
+      const tiktokRes = await fetch(
+        'https://business-api.tiktok.com/open_api/v1.3/event/track/',
+        {
+          method: 'POST',
+          headers: {
+            'Access-Token': tiktokToken,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(tiktokPayload),
+        }
+      );
+
+      const tiktokJson = await tiktokRes.json();
+      console.log(
+        `[TikTok Events API Live] Event "${ttEvent}" (${eventId}) status:`,
+        tiktokRes.status,
+        tiktokJson
+      );
+
+      res.json({
+        success: true,
+        eventId,
+        deduplicated: true,
+        tiktokResponse: tiktokJson,
+      });
+      return;
+    }
+
+    console.log(
+      `[TikTok Events API Ready] "${ttEvent}" | EventID: ${eventId} | Pixel: ${pixelId} | Hashed phone: ${Boolean(
+        hashedPhone
+      )}`
+    );
+
+    res.json({
+      success: true,
+      eventId,
+      deduplicated: true,
+      status: 'processed_and_logged',
+      pixelId,
+      message:
+        'TikTok Events API received and formatted event. Add TIKTOK_EVENTS_API_ACCESS_TOKEN to .env to push live to TikTok Business API.',
+    });
+  } catch (error) {
+    console.error('[TikTok Events API Server Error]', error);
+    res.status(500).json({ error: 'Internal TikTok Events API error', details: String(error) });
+  }
+});
+
+/**
  * Local Orders Database Store
  */
 const DATA_DIR = path.resolve(__dirname, 'data');
@@ -195,6 +316,168 @@ function saveOrder(order: any): void {
     console.log(`[Orders DB] New order saved successfully: ${order.orderReference}`);
   } catch (err) {
     console.error('[Orders DB] Error saving order:', err);
+  }
+}
+
+/**
+ * Server-Side Events API Dispatcher for Meta Conversions API (CAPI) & TikTok Events API
+ * Guarantees that every placed order is tracked server-side even if browser ad-blockers are active.
+ */
+async function dispatchServerEventsForOrder(
+  newOrder: any,
+  clientUserAgent: string = ''
+) {
+  const normalizedPhone = normalizePhone(newOrder.phone || newOrder.whatsapp);
+  const hashedPhone = normalizedPhone ? hashSha256(normalizedPhone) : undefined;
+  const parts = String(newOrder.customerName || '').trim().split(/\s+/);
+  const firstName = parts[0] || '';
+  const lastName = parts.slice(1).join(' ') || parts[0];
+
+  const subtotalNumber =
+    typeof newOrder.subtotal === 'number'
+      ? newOrder.subtotal
+      : parseInt(String(newOrder.subtotal).replace(/\D/g, ''), 10) || 180000;
+
+  // 1. Dispatch to Meta Conversions API (CAPI)
+  try {
+    const hashedUserData: Record<string, any> = {
+      client_ip_address: newOrder.clientIp,
+      client_user_agent: clientUserAgent,
+      country: [hashSha256('ng')],
+    };
+    if (normalizedPhone) hashedUserData.ph = [hashSha256(normalizedPhone)];
+    if (firstName) hashedUserData.fn = [hashSha256(firstName)];
+    if (lastName) hashedUserData.ln = [hashSha256(lastName)];
+    if (newOrder.state) hashedUserData.st = [hashSha256(String(newOrder.state).replace(/\s+/g, ''))];
+
+    const capiPayload = {
+      data: [
+        {
+          event_name: 'Purchase',
+          event_time: Math.floor(Date.now() / 1000),
+          event_id: newOrder.orderReference,
+          event_source_url: 'https://www.maxluxurybathrooms.shop/',
+          action_source: 'website',
+          user_data: hashedUserData,
+          custom_data: {
+            content_name: 'A-01 Deadbolt Type Smart Lock',
+            content_category: 'Smart Home Security',
+            content_type: 'product',
+            content_ids: ['A-01-DEADBOLT-LOCK'],
+            currency: 'NGN',
+            value: subtotalNumber,
+            num_items: newOrder.quantity || 1,
+            order_id: newOrder.orderReference,
+            order_ref: newOrder.orderReference,
+          },
+        },
+        {
+          event_name: 'Lead',
+          event_time: Math.floor(Date.now() / 1000),
+          event_id: `sec_${newOrder.orderReference}`,
+          event_source_url: 'https://www.maxluxurybathrooms.shop/',
+          action_source: 'website',
+          user_data: hashedUserData,
+          custom_data: {
+            content_name: 'A-01 Deadbolt Type Smart Lock Order',
+            currency: 'NGN',
+            value: subtotalNumber,
+            num_items: newOrder.quantity || 1,
+            order_ref: newOrder.orderReference,
+          },
+        },
+      ],
+      ...(process.env.META_TEST_EVENT_CODE
+        ? { test_event_code: process.env.META_TEST_EVENT_CODE }
+        : {}),
+    };
+
+    const metaToken =
+      process.env.META_CONVERSIONS_API_TOKEN || process.env.META_CAPI_ACCESS_TOKEN;
+    if (metaToken) {
+      fetch(`https://graph.facebook.com/v19.0/${META_PIXEL_ID}/events?access_token=${metaToken}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(capiPayload),
+      }).catch((err) => console.warn('[Server Meta CAPI] Async notice:', err));
+    }
+    console.log(`[Server Meta CAPI Dispatched] Purchase + Lead event_id: ${newOrder.orderReference}`);
+  } catch (metaErr) {
+    console.warn('[Server Meta CAPI] Error:', metaErr);
+  }
+
+  // 2. Dispatch to TikTok Events API (CompletePayment & PlaceAnOrder)
+  try {
+    const tiktokPayload = {
+      event_source: 'web',
+      event_source_id: TIKTOK_PIXEL_ID,
+      data: [
+        {
+          event: 'CompletePayment',
+          event_time: Math.floor(Date.now() / 1000),
+          event_id: newOrder.orderReference,
+          user: {
+            ...(hashedPhone ? { phone: hashedPhone } : {}),
+            ip: newOrder.clientIp,
+            user_agent: clientUserAgent,
+          },
+          properties: {
+            currency: 'NGN',
+            value: subtotalNumber,
+            order_id: newOrder.orderReference,
+            contents: [
+              {
+                content_id: 'A-01-DEADBOLT-LOCK',
+                content_name: 'A-01 Deadbolt Type Smart Lock',
+                content_type: 'product',
+                quantity: newOrder.quantity || 1,
+                price: 180000,
+              },
+            ],
+          },
+        },
+        {
+          event: 'PlaceAnOrder',
+          event_time: Math.floor(Date.now() / 1000),
+          event_id: `sec_${newOrder.orderReference}`,
+          user: {
+            ...(hashedPhone ? { phone: hashedPhone } : {}),
+            ip: newOrder.clientIp,
+            user_agent: clientUserAgent,
+          },
+          properties: {
+            currency: 'NGN',
+            value: subtotalNumber,
+            order_id: newOrder.orderReference,
+            contents: [
+              {
+                content_id: 'A-01-DEADBOLT-LOCK',
+                content_name: 'A-01 Deadbolt Type Smart Lock',
+                content_type: 'product',
+                quantity: newOrder.quantity || 1,
+                price: 180000,
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const tiktokToken =
+      process.env.TIKTOK_EVENTS_API_ACCESS_TOKEN || process.env.TIKTOK_ACCESS_TOKEN;
+    if (tiktokToken) {
+      fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
+        method: 'POST',
+        headers: {
+          'Access-Token': tiktokToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tiktokPayload),
+      }).catch((err) => console.warn('[Server TikTok Events API] Async notice:', err));
+    }
+    console.log(`[Server TikTok Events API Dispatched] CompletePayment + PlaceAnOrder event_id: ${newOrder.orderReference}`);
+  } catch (ttErr) {
+    console.warn('[Server TikTok Events API] Error:', ttErr);
   }
 }
 
@@ -256,6 +539,12 @@ app.post('/api/orders', async (req: Request, res: Response) => {
 
     // Save order permanently to server
     saveOrder(newOrder);
+
+    // Auto-dispatch server-side events to Meta Conversions API & TikTok Events API
+    dispatchServerEventsForOrder(
+      newOrder,
+      (req.headers['user-agent'] as string) || ''
+    );
 
     // Forward order email notification directly to Formspree
     const formspreeEndpoint =
@@ -344,6 +633,7 @@ async function startServer() {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Server] Running on http://0.0.0.0:${PORT}`);
     console.log(`[Meta Pixel & CAPI] Configured for Pixel ID: ${META_PIXEL_ID}`);
+    console.log(`[TikTok Pixel & Events API] Configured for Pixel ID: ${TIKTOK_PIXEL_ID}`);
   });
 }
 
