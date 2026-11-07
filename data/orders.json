@@ -1,0 +1,23 @@
+[
+  {
+    "orderReference": "ML-925214",
+    "product": "Max Luxury Smart Security Door Lock",
+    "unitPrice": "₦180,000",
+    "quantity": 1,
+    "subtotal": "₦180,000",
+    "paymentMethod": "Payment on Delivery",
+    "deliveryFee": "To Be Confirmed via Call",
+    "customerName": "Test Order Lead",
+    "phone": "08012345678",
+    "whatsapp": "08012345678",
+    "state": "Lagos",
+    "city": "",
+    "address": "12 Test Lekki Phase 1",
+    "doorType": "Wooden Door",
+    "installationRequired": "Need Advice",
+    "additionalInstructions": "",
+    "clientIp": "127.0.0.1",
+    "submittedAt": "2026-11-07T07:31:51.533Z",
+    "status": "pending_dispatch"
+  }
+]

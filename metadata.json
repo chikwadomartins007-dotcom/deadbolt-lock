@@ -1,0 +1,6 @@
+{
+  "name": "Max Luxury Smart Lock Nigeria",
+  "description": "Premium sales website for Max Luxury Smart Security Door Lock featuring facial recognition, palm vein technology, fingerprint access, and smartphone control.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
