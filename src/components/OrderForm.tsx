@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { PRODUCT_DATA, NIGERIAN_STATES } from '../data/productData';
-import { trackPurchase, trackLeadOrderSubmitted, trackContact } from '../utils/pixel';
+import {
+  trackPurchase,
+  trackLeadOrderSubmitted,
+  trackContact,
+  getFbp,
+  getFbc,
+  getTestEventCode,
+  getTtclid,
+} from '../utils/pixel';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -138,6 +146,12 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
       doorType: doorType,
       installationRequired: installationRequired,
       additionalInstructions: additionalInstructions.trim() || 'None',
+      fbp: getFbp(),
+      fbc: getFbc(),
+      ttclid: getTtclid(),
+      testEventCode: getTestEventCode(),
+      eventSourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+      clientUserAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
       submittedAt: new Date().toISOString(),
     };
 

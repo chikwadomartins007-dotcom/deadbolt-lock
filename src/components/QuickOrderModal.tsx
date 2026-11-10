@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { PRODUCT_DATA, NIGERIAN_STATES } from '../data/productData';
-import { trackPurchase, trackLeadOrderSubmitted, trackContact } from '../utils/pixel';
+import {
+  trackPurchase,
+  trackLeadOrderSubmitted,
+  trackContact,
+  getFbp,
+  getFbc,
+  getTestEventCode,
+  getTtclid,
+} from '../utils/pixel';
 import {
   X,
   Zap,
@@ -208,6 +216,12 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       doorType: doorType,
       installationRequired: 'Need Advice',
       additionalInstructions: 'Quick Order Popup',
+      fbp: getFbp(),
+      fbc: getFbc(),
+      ttclid: getTtclid(),
+      testEventCode: getTestEventCode(),
+      eventSourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+      clientUserAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
       submittedAt: new Date().toISOString(),
     };
 

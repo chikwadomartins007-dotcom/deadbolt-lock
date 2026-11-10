@@ -28,22 +28,27 @@ function hashSha256(value?: string | null): string | undefined {
 }
 
 /**
- * Format phone number to E.164 (defaults to Nigerian +234 if local 080... format)
+ * Format phone number to E.164 (standard for Nigeria +234)
  */
 function normalizePhone(phone?: string | null): string | undefined {
   if (!phone) return undefined;
   let digits = phone.replace(/\D/g, '');
   if (!digits) return undefined;
-  // If Nigerian format starting with 0, convert 080... to 23480...
-  if (digits.startsWith('0') && digits.length === 11) {
+
+  // Handle Nigerian formats
+  if (digits.startsWith('2340') && digits.length === 14) {
+    digits = '234' + digits.substring(4);
+  } else if (digits.startsWith('0') && digits.length === 11) {
     digits = '234' + digits.substring(1);
+  } else if (!digits.startsWith('234') && digits.length === 10) {
+    digits = '234' + digits;
   }
   return digits;
 }
 
 /**
  * Meta Conversions API (CAPI) Endpoint
- * Handles PageView, ViewContent, InitiateCheckout, Lead, and Contact events.
+ * Handles PageView, ViewContent, InitiateCheckout, Lead, Purchase, and Contact events.
  * Fully supports event deduplication via event_id matching the browser pixel.
  */
 app.post('/api/meta-conversions', async (req: Request, res: Response) => {
@@ -61,6 +66,13 @@ app.post('/api/meta-conversions', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'eventName and eventId are required' });
       return;
     }
+
+    // Dynamic origin / referer fallback
+    const resolvedSourceUrl =
+      eventSourceUrl ||
+      (req.headers.referer as string) ||
+      (req.headers.origin as string) ||
+      (process.env.APP_URL ? process.env.APP_URL : 'https://www.maxluxurybathrooms.shop/');
 
     // Extract client IP and User-Agent
     const clientIp =
@@ -93,11 +105,16 @@ app.post('/api/meta-conversions', async (req: Request, res: Response) => {
     if (lastName) hashedUserData.ln = [hashSha256(lastName)];
     if (userData.city) hashedUserData.ct = [hashSha256(userData.city.replace(/\s+/g, ''))];
     if (userData.state) hashedUserData.st = [hashSha256(userData.state.replace(/\s+/g, ''))];
-    hashedUserData.country = [hashSha256('ng')]; // Default to Nigeria
+    hashedUserData.country = [hashSha256('ng')]; // Standard Nigeria ISO-2 code
 
-    // Pass through browser identifiers if present
+    // Pass through browser cookie identifiers if present
     if (userData.fbp) hashedUserData.fbp = userData.fbp;
     if (userData.fbc) hashedUserData.fbc = userData.fbc;
+
+    const testEventCode =
+      req.body.testEventCode ||
+      (req.query.test_event_code as string) ||
+      process.env.META_TEST_EVENT_CODE;
 
     const capiPayload = {
       data: [
@@ -105,15 +122,13 @@ app.post('/api/meta-conversions', async (req: Request, res: Response) => {
           event_name: eventName,
           event_time: Math.floor(Date.now() / 1000),
           event_id: eventId,
-          event_source_url: eventSourceUrl || 'https://www.maxluxurybathrooms.shop/',
+          event_source_url: resolvedSourceUrl,
           action_source: 'website',
           user_data: hashedUserData,
           custom_data: customData,
         },
       ],
-      ...((req.body.testEventCode || process.env.META_TEST_EVENT_CODE)
-        ? { test_event_code: req.body.testEventCode || process.env.META_TEST_EVENT_CODE }
-        : {}),
+      ...(testEventCode ? { test_event_code: testEventCode } : {}),
     };
 
     const accessToken =
@@ -135,6 +150,7 @@ app.post('/api/meta-conversions', async (req: Request, res: Response) => {
         success: true,
         eventId,
         deduplicated: true,
+        pixelId,
         metaResponse: metaJson,
       });
       return;
@@ -144,7 +160,7 @@ app.post('/api/meta-conversions', async (req: Request, res: Response) => {
     console.log(
       `[Meta CAPI Ready] "${eventName}" | EventID: ${eventId} | Pixel: ${pixelId} | EMQ matched fields: ${Object.keys(
         hashedUserData
-      ).join(', ')}`
+      ).join(', ')}${testEventCode ? ` | Test Code: ${testEventCode}` : ''}`
     );
 
     res.json({
@@ -153,6 +169,7 @@ app.post('/api/meta-conversions', async (req: Request, res: Response) => {
       deduplicated: true,
       status: 'processed_and_logged',
       pixelId,
+      matchedFields: Object.keys(hashedUserData),
       message:
         'Conversions API received and hashed event. Add META_CONVERSIONS_API_TOKEN to .env to push live to Meta Graph API.',
     });
@@ -325,7 +342,8 @@ function saveOrder(order: any): void {
  */
 async function dispatchServerEventsForOrder(
   newOrder: any,
-  clientUserAgent: string = ''
+  clientUserAgent: string = '',
+  reqHeaders: Record<string, any> = {}
 ) {
   const normalizedPhone = normalizePhone(newOrder.phone || newOrder.whatsapp);
   const hashedPhone = normalizedPhone ? hashSha256(normalizedPhone) : undefined;
@@ -338,17 +356,30 @@ async function dispatchServerEventsForOrder(
       ? newOrder.subtotal
       : parseInt(String(newOrder.subtotal).replace(/\D/g, ''), 10) || 180000;
 
+  const resolvedSourceUrl =
+    newOrder.eventSourceUrl ||
+    (reqHeaders['referer'] as string) ||
+    (reqHeaders['origin'] as string) ||
+    (process.env.APP_URL ? process.env.APP_URL : 'https://www.maxluxurybathrooms.shop/');
+
+  const testEventCode =
+    newOrder.testEventCode || process.env.META_TEST_EVENT_CODE;
+
   // 1. Dispatch to Meta Conversions API (CAPI)
   try {
     const hashedUserData: Record<string, any> = {
       client_ip_address: newOrder.clientIp,
-      client_user_agent: clientUserAgent,
+      client_user_agent: clientUserAgent || newOrder.clientUserAgent || '',
       country: [hashSha256('ng')],
     };
+    if (newOrder.email) hashedUserData.em = [hashSha256(newOrder.email)];
     if (normalizedPhone) hashedUserData.ph = [hashSha256(normalizedPhone)];
     if (firstName) hashedUserData.fn = [hashSha256(firstName)];
     if (lastName) hashedUserData.ln = [hashSha256(lastName)];
     if (newOrder.state) hashedUserData.st = [hashSha256(String(newOrder.state).replace(/\s+/g, ''))];
+    if (newOrder.city) hashedUserData.ct = [hashSha256(String(newOrder.city).replace(/\s+/g, ''))];
+    if (newOrder.fbp) hashedUserData.fbp = newOrder.fbp;
+    if (newOrder.fbc) hashedUserData.fbc = newOrder.fbc;
 
     const capiPayload = {
       data: [
@@ -356,7 +387,7 @@ async function dispatchServerEventsForOrder(
           event_name: 'Purchase',
           event_time: Math.floor(Date.now() / 1000),
           event_id: newOrder.orderReference,
-          event_source_url: 'https://www.maxluxurybathrooms.shop/',
+          event_source_url: resolvedSourceUrl,
           action_source: 'website',
           user_data: hashedUserData,
           custom_data: {
@@ -375,7 +406,7 @@ async function dispatchServerEventsForOrder(
           event_name: 'Lead',
           event_time: Math.floor(Date.now() / 1000),
           event_id: `sec_${newOrder.orderReference}`,
-          event_source_url: 'https://www.maxluxurybathrooms.shop/',
+          event_source_url: resolvedSourceUrl,
           action_source: 'website',
           user_data: hashedUserData,
           custom_data: {
@@ -387,9 +418,7 @@ async function dispatchServerEventsForOrder(
           },
         },
       ],
-      ...(process.env.META_TEST_EVENT_CODE
-        ? { test_event_code: process.env.META_TEST_EVENT_CODE }
-        : {}),
+      ...(testEventCode ? { test_event_code: testEventCode } : {}),
     };
 
     const metaToken =
@@ -399,9 +428,19 @@ async function dispatchServerEventsForOrder(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(capiPayload),
-      }).catch((err) => console.warn('[Server Meta CAPI] Async notice:', err));
+      })
+        .then(async (res) => {
+          const json = await res.json().catch(() => null);
+          console.log(`[Server Meta CAPI Live] Purchase Event (${newOrder.orderReference}) status: ${res.status}`, json);
+        })
+        .catch((err) => console.warn('[Server Meta CAPI] Async notice:', err));
+    } else {
+      console.log(
+        `[Server Meta CAPI Ready] Order "${newOrder.orderReference}" | Pixel: ${META_PIXEL_ID} | EMQ matched fields: ${Object.keys(
+          hashedUserData
+        ).join(', ')}${testEventCode ? ` | Test Code: ${testEventCode}` : ''}`
+      );
     }
-    console.log(`[Server Meta CAPI Dispatched] Purchase + Lead event_id: ${newOrder.orderReference}`);
   } catch (metaErr) {
     console.warn('[Server Meta CAPI] Error:', metaErr);
   }
@@ -419,7 +458,8 @@ async function dispatchServerEventsForOrder(
           user: {
             ...(hashedPhone ? { phone: hashedPhone } : {}),
             ip: newOrder.clientIp,
-            user_agent: clientUserAgent,
+            user_agent: clientUserAgent || newOrder.clientUserAgent || '',
+            ...(newOrder.ttclid ? { ttclid: newOrder.ttclid } : {}),
           },
           properties: {
             currency: 'NGN',
@@ -443,7 +483,8 @@ async function dispatchServerEventsForOrder(
           user: {
             ...(hashedPhone ? { phone: hashedPhone } : {}),
             ip: newOrder.clientIp,
-            user_agent: clientUserAgent,
+            user_agent: clientUserAgent || newOrder.clientUserAgent || '',
+            ...(newOrder.ttclid ? { ttclid: newOrder.ttclid } : {}),
           },
           properties: {
             currency: 'NGN',
@@ -473,9 +514,13 @@ async function dispatchServerEventsForOrder(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(tiktokPayload),
-      }).catch((err) => console.warn('[Server TikTok Events API] Async notice:', err));
+      })
+        .then(async (res) => {
+          const json = await res.json().catch(() => null);
+          console.log(`[Server TikTok Events API Live] CompletePayment (${newOrder.orderReference}) status: ${res.status}`, json);
+        })
+        .catch((err) => console.warn('[Server TikTok Events API] Async notice:', err));
     }
-    console.log(`[Server TikTok Events API Dispatched] CompletePayment + PlaceAnOrder event_id: ${newOrder.orderReference}`);
   } catch (ttErr) {
     console.warn('[Server TikTok Events API] Error:', ttErr);
   }
@@ -491,6 +536,7 @@ app.post('/api/orders', async (req: Request, res: Response) => {
       customerName,
       phone,
       whatsapp,
+      email,
       state,
       city,
       address,
@@ -502,6 +548,12 @@ app.post('/api/orders', async (req: Request, res: Response) => {
       unitPrice = '₦180,000',
       subtotal = '₦180,000',
       product = 'Max Luxury Smart Security Door Lock',
+      fbp,
+      fbc,
+      ttclid,
+      testEventCode,
+      eventSourceUrl,
+      clientUserAgent,
     } = req.body;
 
     if (!customerName || !phone || !state || !address) {
@@ -526,6 +578,7 @@ app.post('/api/orders', async (req: Request, res: Response) => {
       customerName: String(customerName).trim(),
       phone: String(phone).trim(),
       whatsapp: String(whatsapp || phone).trim(),
+      email: email ? String(email).trim().toLowerCase() : undefined,
       state: String(state).trim(),
       city: String(city || '').trim(),
       address: String(address).trim(),
@@ -533,6 +586,12 @@ app.post('/api/orders', async (req: Request, res: Response) => {
       installationRequired,
       additionalInstructions: String(additionalInstructions || '').trim(),
       clientIp: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress,
+      clientUserAgent: clientUserAgent || (req.headers['user-agent'] as string) || '',
+      fbp,
+      fbc,
+      ttclid,
+      testEventCode,
+      eventSourceUrl,
       submittedAt: new Date().toISOString(),
       status: 'pending_dispatch',
     };
@@ -543,7 +602,8 @@ app.post('/api/orders', async (req: Request, res: Response) => {
     // Auto-dispatch server-side events to Meta Conversions API & TikTok Events API
     dispatchServerEventsForOrder(
       newOrder,
-      (req.headers['user-agent'] as string) || ''
+      (req.headers['user-agent'] as string) || '',
+      req.headers
     );
 
     // Forward order email notification directly to Formspree

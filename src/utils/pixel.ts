@@ -29,7 +29,7 @@ export function generateEventId(): string {
 /**
  * Extract browser cookie helper
  */
-function getCookie(name: string): string | null {
+export function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
   return match ? decodeURIComponent(match[3]) : null;
@@ -38,7 +38,7 @@ function getCookie(name: string): string | null {
 /**
  * Get Facebook click ID from URL (?fbclid=...) or _fbc cookie
  */
-function getFbc(): string | null {
+export function getFbc(): string | null {
   if (typeof window === 'undefined') return null;
   const urlParams = new URLSearchParams(window.location.search);
   const fbclid = urlParams.get('fbclid');
@@ -51,14 +51,14 @@ function getFbc(): string | null {
 /**
  * Get Facebook browser ID from _fbp cookie
  */
-function getFbp(): string | null {
+export function getFbp(): string | null {
   return getCookie('_fbp');
 }
 
 /**
  * Get TikTok Click ID from URL (?ttclid=...) or cookie
  */
-function getTtclid(): string | null {
+export function getTtclid(): string | null {
   if (typeof window === 'undefined') return null;
   const urlParams = new URLSearchParams(window.location.search);
   const param = urlParams.get('ttclid');
@@ -69,7 +69,7 @@ function getTtclid(): string | null {
 /**
  * Get Meta Test Event Code from URL (?test_event_code=...)
  */
-function getTestEventCode(): string | null {
+export function getTestEventCode(): string | null {
   if (typeof window === 'undefined') return null;
   const urlParams = new URLSearchParams(window.location.search);
   return (
@@ -333,6 +333,15 @@ export function trackViewContent(
     price: price,
     value: price,
     currency: currency,
+    contents: [
+      {
+        content_id: 'A-01-DEADBOLT-LOCK',
+        content_name: contentName,
+        content_category: 'Smart Home Security',
+        quantity: 1,
+        price: price,
+      },
+    ],
   };
 
   // Meta Browser Pixel
@@ -380,6 +389,15 @@ export function trackInitiateCheckout(
     price: 180000,
     value: value,
     currency: currency,
+    contents: [
+      {
+        content_id: 'A-01-DEADBOLT-LOCK',
+        content_name: 'A-01 Deadbolt Type Smart Lock',
+        content_category: 'Smart Home Security',
+        quantity: quantity,
+        price: 180000,
+      },
+    ],
   };
 
   // Meta Browser Pixel
@@ -440,6 +458,16 @@ export function trackPurchase(
     status: 'order_received_payment_on_delivery',
   };
 
+  const cleanPhone = (userData.phoneNumber || userData.whatsappNumber || '').replace(/\D/g, '');
+  let normalizedPhone = cleanPhone;
+  if (cleanPhone.startsWith('2340') && cleanPhone.length === 14) {
+    normalizedPhone = '234' + cleanPhone.substring(4);
+  } else if (cleanPhone.startsWith('0') && cleanPhone.length === 11) {
+    normalizedPhone = '234' + cleanPhone.substring(1);
+  } else if (!cleanPhone.startsWith('234') && cleanPhone.length === 10) {
+    normalizedPhone = '234' + cleanPhone;
+  }
+
   const tikTokPurchaseData = {
     content_id: 'A-01-DEADBOLT-LOCK',
     content_type: 'product',
@@ -451,14 +479,22 @@ export function trackPurchase(
     value: value,
     currency: currency,
     status: 'payment_on_delivery',
+    contents: [
+      {
+        content_id: 'A-01-DEADBOLT-LOCK',
+        content_type: 'product',
+        content_name: 'A-01 Deadbolt Type Smart Lock',
+        content_category: 'Smart Home Security',
+        quantity: userData.quantity || 1,
+        price: 180000,
+      },
+    ],
   };
-
-  const cleanPhone = (userData.phoneNumber || userData.whatsappNumber || '').replace(/\D/g, '');
 
   // 1. TikTok Identify for advanced matching
   if (typeof window !== 'undefined' && window.ttq && typeof window.ttq.identify === 'function') {
     window.ttq.identify({
-      phone_number: cleanPhone || undefined,
+      phone_number: normalizedPhone || undefined,
       name: userData.fullName || undefined,
     });
   }
