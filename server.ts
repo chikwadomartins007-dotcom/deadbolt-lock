@@ -610,7 +610,7 @@ app.post('/api/orders', async (req: Request, res: Response) => {
     const formspreeEndpoint =
       process.env.VITE_FORMSPREE_ENDPOINT ||
       process.env.ORDER_WEBHOOK_URL ||
-      'https://formspree.io/f/mvkknayb';
+      'https://formspree.io/f/mgakwyrr';
 
     if (formspreeEndpoint) {
       fetch(formspreeEndpoint, {

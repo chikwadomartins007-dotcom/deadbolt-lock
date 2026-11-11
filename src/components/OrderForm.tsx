@@ -169,7 +169,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
       });
 
       // 2. Post directly to Formspree for instant email delivery to merchant
-      await fetch('https://formspree.io/f/mvkknayb', {
+      const formspreeUrl = import.meta.env.VITE_FORMSPREE_ENDPOINT || 'https://formspree.io/f/mgakwyrr';
+      await fetch(formspreeUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
