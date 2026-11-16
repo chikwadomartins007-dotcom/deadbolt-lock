@@ -239,7 +239,7 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       });
 
       // 2. Post directly to Formspree so user instantly receives email notification
-      const formspreeUrl = import.meta.env.VITE_FORMSPREE_ENDPOINT || 'https://formspree.io/f/mgakwyrr';
+      const formspreeUrl = import.meta.env.VITE_FORMSPREE_ENDPOINT || 'https://formspree.io/f/mzereloe';
       await fetch(formspreeUrl, {
         method: 'POST',
         headers: {
