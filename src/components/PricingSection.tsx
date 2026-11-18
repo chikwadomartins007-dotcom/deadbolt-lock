@@ -59,7 +59,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onOrderClick }) 
                       ₦{PRODUCT_DATA.sellingPrice.toLocaleString()}
                     </span>
                     <span className="text-xs font-bold text-black bg-[#F5C518] px-2.5 py-1 rounded-lg">
-                      SAVE ₦70,000
+                      SAVE ₦{(PRODUCT_DATA.regularPrice - PRODUCT_DATA.sellingPrice).toLocaleString()}
                     </span>
                   </div>
                 </div>

@@ -386,7 +386,7 @@ export function trackInitiateCheckout(
     content_type: 'product',
     content_name: 'A-01 Deadbolt Type Smart Lock',
     quantity: quantity,
-    price: 180000,
+    price: 160000,
     value: value,
     currency: currency,
     contents: [
@@ -395,7 +395,7 @@ export function trackInitiateCheckout(
         content_name: 'A-01 Deadbolt Type Smart Lock',
         content_category: 'Smart Home Security',
         quantity: quantity,
-        price: 180000,
+        price: 160000,
       },
     ],
   };
@@ -475,7 +475,7 @@ export function trackPurchase(
     content_category: 'Smart Home Security',
     order_id: orderRef,
     quantity: userData.quantity || 1,
-    price: 180000,
+    price: 160000,
     value: value,
     currency: currency,
     status: 'payment_on_delivery',
@@ -486,7 +486,7 @@ export function trackPurchase(
         content_name: 'A-01 Deadbolt Type Smart Lock',
         content_category: 'Smart Home Security',
         quantity: userData.quantity || 1,
-        price: 180000,
+        price: 160000,
       },
     ],
   };
@@ -603,7 +603,7 @@ export function trackContact(orderRef?: string, eventId?: string): string {
 // Global browser test helpers for Meta Pixel Helper and TikTok Pixel testing
 if (typeof window !== 'undefined') {
   (window as any).trackPurchase = trackPurchase;
-  (window as any).testPurchaseEvent = (amount: number = 180000) => {
+  (window as any).testPurchaseEvent = (amount: number = 160000) => {
     const testRef = 'ML-TEST-' + Math.floor(100000 + Math.random() * 900000);
     console.log('[Test Helper] Triggering Purchase Event with Ref:', testRef);
     return trackPurchase(testRef, amount, 'NGN', {

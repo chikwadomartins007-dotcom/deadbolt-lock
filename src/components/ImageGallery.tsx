@@ -297,7 +297,7 @@ export const ImageGallery: React.FC = () => {
             <div className="p-3 bg-white rounded-xl border border-gray-200 flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-bold text-gray-500 uppercase block">Special Price</span>
-                <span className="text-lg font-black text-black">₦180,000</span>
+                <span className="text-lg font-black text-black">₦{PRODUCT_DATA.sellingPrice.toLocaleString()}</span>
               </div>
               <a
                 href="#order-form"

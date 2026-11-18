@@ -173,7 +173,7 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick, onExploreClick }) => {
 
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-cyan-50 text-[#007A99] border border-cyan-200">
-                    Instant ₦70k Off
+                    Instant ₦{Math.round((PRODUCT_DATA.regularPrice - PRODUCT_DATA.sellingPrice) / 1000)}k Off
                   </span>
                   <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#F5C518] text-black border border-black/20 shadow-sm">
                     Zero Prepayment
@@ -237,7 +237,7 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick, onExploreClick }) => {
                 <div className="absolute top-3 left-3 bg-black/90 text-white px-3 py-1.5 rounded-xl border border-gray-700 shadow-md flex items-center gap-2 z-20">
                   <span className="w-2 h-2 rounded-full bg-[#00D2FF] animate-pulse" />
                   <span className="text-xs font-bold text-gray-300">A-01 Only</span>
-                  <span className="text-sm font-black text-[#F5C518]">₦180,000</span>
+                  <span className="text-sm font-black text-[#F5C518]">₦{PRODUCT_DATA.sellingPrice.toLocaleString()}</span>
                 </div>
 
                 {/* Active badge */}

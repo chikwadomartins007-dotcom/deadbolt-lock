@@ -28,7 +28,7 @@ export const PRODUCT_DATA = {
   sleekTagline: "SLEEK DESIGN. ADVANCED PROTECTION.",
   tagline: "The Future of Home Security Is Here.",
   regularPrice: 250000,
-  sellingPrice: 180000,
+  sellingPrice: 160000,
   currencySymbol: "₦",
   whatsappNumber: "2348147778029",
   whatsappDisplayNumber: "08147778029",

@@ -231,14 +231,14 @@ app.post('/api/tiktok-events', async (req: Request, res: Response) => {
           },
           properties: {
             currency: customData.currency || 'NGN',
-            value: customData.value || 180000,
+            value: customData.value || 160000,
             contents: [
               {
                 content_id: 'A-01-DEADBOLT-LOCK',
                 content_name: 'A-01 Deadbolt Type Smart Lock',
                 content_type: 'product',
                 quantity: customData.num_items || customData.quantity || 1,
-                price: 180000,
+                price: 160000,
               },
             ],
           },
@@ -354,7 +354,7 @@ async function dispatchServerEventsForOrder(
   const subtotalNumber =
     typeof newOrder.subtotal === 'number'
       ? newOrder.subtotal
-      : parseInt(String(newOrder.subtotal).replace(/\D/g, ''), 10) || 180000;
+      : parseInt(String(newOrder.subtotal).replace(/\D/g, ''), 10) || 160000;
 
   const resolvedSourceUrl =
     newOrder.eventSourceUrl ||
@@ -471,7 +471,7 @@ async function dispatchServerEventsForOrder(
                 content_name: 'A-01 Deadbolt Type Smart Lock',
                 content_type: 'product',
                 quantity: newOrder.quantity || 1,
-                price: 180000,
+                price: 160000,
               },
             ],
           },
@@ -496,7 +496,7 @@ async function dispatchServerEventsForOrder(
                 content_name: 'A-01 Deadbolt Type Smart Lock',
                 content_type: 'product',
                 quantity: newOrder.quantity || 1,
-                price: 180000,
+                price: 160000,
               },
             ],
           },
@@ -545,8 +545,8 @@ app.post('/api/orders', async (req: Request, res: Response) => {
       installationRequired = 'Need Advice',
       additionalInstructions = '',
       orderReference,
-      unitPrice = '₦180,000',
-      subtotal = '₦180,000',
+      unitPrice = '₦160,000',
+      subtotal = '₦160,000',
       product = 'Max Luxury Smart Security Door Lock',
       fbp,
       fbc,

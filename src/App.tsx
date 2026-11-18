@@ -143,7 +143,7 @@ export default function App() {
             <span className="relative inline-flex rounded-full h-3 w-3 bg-[#F5C518]"></span>
           </span>
           <span className="text-xs sm:text-sm font-black uppercase tracking-wider">
-            ⚡ Quick Order <span className="text-[#F5C518]">· ₦180k</span>
+            ⚡ Quick Order <span className="text-[#F5C518]">· ₦{Math.round(PRODUCT_DATA.sellingPrice / 1000)}k</span>
           </span>
         </button>
       </div>
