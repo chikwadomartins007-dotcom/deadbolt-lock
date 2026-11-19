@@ -355,11 +355,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             ORDER YOUR A-01 DEADBOLT SMART LOCK.
           </h2>
           <p className="mt-3 text-base text-gray-700 font-medium">
-            Smart Access. Secure Every Day. Lock in your A-01 during our 2-Day Christmas Promo at <strong className="text-black bg-[#FFF9D6] border border-[#F5C518] px-2 py-0.5 rounded">₦{unitPrice.toLocaleString()}</strong>. Pay only after delivery and physical inspection.
+            Smart Access. Secure Every Day. Lock in your A-01 during our 7-Day Christmas Promo at <strong className="text-black bg-[#FFF9D6] border border-[#F5C518] px-2 py-0.5 rounded">₦{unitPrice.toLocaleString()}</strong>. Pay only after delivery and physical inspection.
           </p>
         </div>
 
-        {/* 2-Day Christmas Promo Urgency Strip */}
+        {/* 7-Day Christmas Promo Urgency Strip */}
         <ChristmasPromoCountdown variant="banner" className="mb-8" />
 
         {/* 3 Quick Step Indicator */}

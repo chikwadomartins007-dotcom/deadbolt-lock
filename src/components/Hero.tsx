@@ -144,7 +144,7 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick, onExploreClick }) => {
               Equipped with high-precision 3D facial recognition, palm vein sensor, semiconductor fingerprint reader, 4.0-inch HD interior screen, and Tuya smartphone control.
             </p>
 
-            {/* 2-DAY CHRISTMAS PROMO COUNTDOWN BANNER */}
+            {/* 7-DAY CHRISTMAS PROMO COUNTDOWN BANNER */}
             <ChristmasPromoCountdown variant="banner" />
 
             {/* PRICE CAPSULE (White Surface with Bold High Contrast) */}
@@ -157,7 +157,7 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick, onExploreClick }) => {
                 <div>
                   <div className="text-xs uppercase tracking-widest font-black text-[#0088A8] mb-1 flex items-center gap-1.5 font-mono">
                     <Zap className="w-3.5 h-3.5 fill-current" />
-                    2-DAY CHRISTMAS PROMO PRICE:
+                    7-DAY CHRISTMAS PROMO PRICE:
                   </div>
                   <div className="flex items-baseline gap-3">
                     <span className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#101010] tabular-nums font-heading tracking-tight">

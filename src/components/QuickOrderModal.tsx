@@ -516,7 +516,7 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
               Smart Access. Secure Every Day.
             </p>
 
-            {/* Compact 2-Day Christmas Promo Countdown */}
+            {/* Compact 7-Day Christmas Promo Countdown */}
             <ChristmasPromoCountdown variant="compact" className="mt-2.5" />
 
             {/* Mini Product Bar with AUTO-CHANGING Image Slideshow */}

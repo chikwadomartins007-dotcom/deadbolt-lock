@@ -46,13 +46,13 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 border border-red-300 text-xs font-mono font-black text-red-800 tracking-widest uppercase mb-3 shadow-sm">
             <Gift className="w-3.5 h-3.5 text-red-700" />
-            <span>2-Day Christmas Promo</span>
+            <span>7-Day Christmas Promo</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-black text-[#101010] tracking-tight font-heading">
             UPGRADE YOUR SECURITY TODAY!
           </h2>
           <p className="mt-4 text-base sm:text-lg text-gray-700 font-normal">
-            Secure the genuine <strong className="text-black">A-01 Deadbolt Type Smart Lock</strong> during our 48-hour Christmas promo at ₦160,000 + ₦5,000 extra off each lock when ordering 2 or more.
+            Secure the genuine <strong className="text-black">A-01 Deadbolt Type Smart Lock</strong> during our 7-day Christmas promo at ₦160,000 + ₦5,000 extra off each lock when ordering 2 or more.
           </p>
         </div>
 
@@ -84,7 +84,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
 
                 <div className="pt-1 flex flex-col">
                   <span className="text-xs uppercase tracking-widest text-[#00D2FF] font-mono font-black">
-                    2-DAY CHRISTMAS PROMO PRICE:
+                    7-DAY CHRISTMAS PROMO PRICE:
                   </span>
                   <div className="flex items-baseline gap-3 mt-1">
                     <span className="text-4xl sm:text-5xl font-black text-[#F5C518] drop-shadow-[0_0_20px_rgba(245,197,24,0.4)] tabular-nums font-heading tracking-tight">

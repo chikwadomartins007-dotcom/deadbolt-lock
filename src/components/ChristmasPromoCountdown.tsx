@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Gift, Clock, Sparkles } from 'lucide-react';
 
-const PROMO_DURATION_MS = 48 * 60 * 60 * 1000; // 2 Days (48 Hours)
-const STORAGE_KEY = 'ml_xmas_2day_promo_end';
+const PROMO_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 Days
+const STORAGE_KEY = 'ml_xmas_7day_promo_end';
 
 interface TimeLeft {
   days: string;
@@ -35,7 +35,7 @@ function calculateTimeLeft(endTimestamp: number): TimeLeft {
   let diff = endTimestamp - now;
 
   if (diff <= 0) {
-    // Restart fresh 48-hour cycle cleanly if expired
+    // Restart fresh 7-day cycle cleanly if expired
     const renewed = now + PROMO_DURATION_MS;
     if (typeof window !== 'undefined') {
       try {
@@ -97,7 +97,7 @@ export const ChristmasPromoCountdown: React.FC<ChristmasPromoCountdownProps> = (
       >
         <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider">
           <Gift className="w-3.5 h-3.5 text-[#F5C518] shrink-0" />
-          <span className="text-[#F5C518]">2-Day Christmas Promo</span>
+          <span className="text-[#F5C518]">7-Day Christmas Promo</span>
         </div>
         <div className="flex items-center gap-1 font-mono text-xs font-black tabular-nums">
           <span className="px-1.5 py-0.5 rounded bg-white/15 border border-white/20 text-white">
@@ -128,10 +128,10 @@ export const ChristmasPromoCountdown: React.FC<ChristmasPromoCountdownProps> = (
         <div className="flex items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-[#F5C518]">
             <Gift className="w-3.5 h-3.5 shrink-0" />
-            <span>2-Day Christmas Promo Ends In</span>
+            <span>7-Day Christmas Promo Ends In</span>
           </span>
           <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-white/15 text-emerald-200 border border-white/20">
-            48H Limited
+            7-Day Limited
           </span>
         </div>
 
@@ -179,10 +179,10 @@ export const ChristmasPromoCountdown: React.FC<ChristmasPromoCountdownProps> = (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs font-black uppercase tracking-wider text-[#F5C518] flex items-center gap-1">
               <Sparkles className="w-3 h-3" />
-              2-DAY CHRISTMAS PROMO
+              7-DAY CHRISTMAS PROMO
             </span>
             <span className="text-[10px] font-mono font-bold bg-white/15 text-emerald-200 px-2 py-0.5 rounded border border-white/20">
-              48-Hour Festive Deal
+              7-Day Festive Deal
             </span>
           </div>
           <p className="text-[11px] sm:text-xs text-gray-200 font-medium mt-0.5">

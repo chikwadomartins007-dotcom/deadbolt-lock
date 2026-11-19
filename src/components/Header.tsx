@@ -86,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({ onOrderClick, onQuickOrderClick 
           <div className="flex items-center gap-3 shrink-0">
             <div className="hidden md:flex flex-col text-right">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-red-700">
-                2-Day Xmas Promo
+                7-Day Xmas Promo
               </span>
               <span className="text-base font-extrabold text-[#101010] tabular-nums font-heading leading-tight">
                 ₦{PRODUCT_DATA.sellingPrice.toLocaleString()}
@@ -123,7 +123,7 @@ export const Header: React.FC<HeaderProps> = ({ onOrderClick, onQuickOrderClick 
       {mobileMenuOpen && (
         <div className="lg:hidden bg-white border-b border-gray-200 px-6 py-4 mt-2 space-y-3 shadow-2xl text-black">
           <div className="p-3 bg-cyan-50 rounded-xl border border-cyan-200 flex items-center justify-between">
-            <span className="text-xs font-bold text-red-800">2-Day Xmas Promo:</span>
+            <span className="text-xs font-bold text-red-800">7-Day Xmas Promo:</span>
             <span className="text-lg font-black text-black tabular-nums">₦{PRODUCT_DATA.sellingPrice.toLocaleString()}</span>
           </div>
           <a
