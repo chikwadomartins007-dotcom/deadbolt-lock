@@ -1,26 +1,58 @@
 import React from 'react';
-import { PRODUCT_DATA } from '../data/productData';
-import { Check, Truck, Package, ArrowRight, ShieldCheck, CheckCircle2, Zap } from 'lucide-react';
+import { PRODUCT_DATA, calculateOrderPricing } from '../data/productData';
+import { Check, Truck, Package, ArrowRight, ShieldCheck, CheckCircle2, Zap, Gift } from 'lucide-react';
+import { ChristmasPromoCountdown } from './ChristmasPromoCountdown';
 
 interface PricingSectionProps {
-  onOrderClick: () => void;
+  selectedQuantity: number;
+  onSelectQuantity: (qty: number) => void;
+  onOrderClick: (qty?: number) => void;
+  onScrollToForm?: (qty?: number) => void;
 }
 
-export const PricingSection: React.FC<PricingSectionProps> = ({ onOrderClick }) => {
+export const PricingSection: React.FC<PricingSectionProps> = ({
+  selectedQuantity,
+  onSelectQuantity,
+  onOrderClick,
+  onScrollToForm,
+}) => {
+  const packageOptions = [
+    {
+      qty: 1,
+      title: '1 Product',
+      subtitle: 'Single Main Door',
+      badge: null,
+    },
+    {
+      qty: 2,
+      title: '2 Products',
+      subtitle: 'Front + Back / Master Door',
+      badge: 'Most Popular',
+    },
+    {
+      qty: 3,
+      title: '3 Products',
+      subtitle: 'Full Home / Office Bundle',
+      badge: 'Save ₦15,000',
+    },
+  ];
+
+  const activePricing = calculateOrderPricing(selectedQuantity);
+
   return (
     <section id="pricing" className="py-24 bg-white text-[#101010] border-t border-gray-200 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-50 border border-[#00A3C4] text-xs font-mono font-black text-[#007A99] tracking-widest uppercase mb-3 shadow-sm">
-            <Zap className="w-3.5 h-3.5 fill-current" />
-            <span>Official Launch Offer</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 border border-red-300 text-xs font-mono font-black text-red-800 tracking-widest uppercase mb-3 shadow-sm">
+            <Gift className="w-3.5 h-3.5 text-red-700" />
+            <span>2-Day Christmas Promo</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-black text-[#101010] tracking-tight font-heading">
             UPGRADE YOUR SECURITY TODAY!
           </h2>
           <p className="mt-4 text-base sm:text-lg text-gray-700 font-normal">
-            Secure the genuine <strong className="text-black">A-01 Deadbolt Type Smart Lock</strong> at the exclusive promo rate. Payment on delivery nationwide.
+            Secure the genuine <strong className="text-black">A-01 Deadbolt Type Smart Lock</strong> during our 48-hour Christmas promo at ₦160,000 + ₦5,000 extra off each lock when ordering 2 or more.
           </p>
         </div>
 
@@ -52,7 +84,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onOrderClick }) 
 
                 <div className="pt-1 flex flex-col">
                   <span className="text-xs uppercase tracking-widest text-[#00D2FF] font-mono font-black">
-                    PROMO OFFER PRICE:
+                    2-DAY CHRISTMAS PROMO PRICE:
                   </span>
                   <div className="flex items-baseline gap-3 mt-1">
                     <span className="text-4xl sm:text-5xl font-black text-[#F5C518] drop-shadow-[0_0_20px_rgba(245,197,24,0.4)] tabular-nums font-heading tracking-tight">
@@ -63,6 +95,8 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onOrderClick }) 
                     </span>
                   </div>
                 </div>
+
+                <ChristmasPromoCountdown variant="card" />
 
                 <div className="pt-3 border-t border-white/20 flex items-center justify-between text-xs text-gray-200">
                   <span className="font-medium">Terms:</span>
@@ -85,15 +119,109 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onOrderClick }) 
                 ))}
               </div>
 
+              {/* 1, 2, or 3 Products Quick Package Selector with ₦5k/unit Bulk Discount */}
+              <div className="space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-black">
+                    Select Package Quantity:
+                  </span>
+                  <span className="text-[11px] font-black text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
+                    ₦5,000 OFF each when buying 2+
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {packageOptions.map((pkg) => {
+                    const isSelected = selectedQuantity === pkg.qty;
+                    const pkgPricing = calculateOrderPricing(pkg.qty);
+                    return (
+                      <button
+                        key={pkg.qty}
+                        type="button"
+                        onClick={() => onSelectQuantity(pkg.qty)}
+                        className={`relative p-3 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-black text-white border-[#F5C518] shadow-lg scale-[1.02]'
+                            : 'bg-white text-black border-gray-300 hover:border-black'
+                        }`}
+                      >
+                        {pkg.badge && (
+                          <span
+                            className={`absolute -top-2.5 right-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shadow-sm ${
+                              isSelected
+                                ? 'bg-[#F5C518] text-black'
+                                : 'bg-black text-[#F5C518]'
+                            }`}
+                          >
+                            {pkg.badge}
+                          </span>
+                        )}
+                        <div>
+                          <div className="text-xs sm:text-sm font-black leading-tight">
+                            {pkg.title}
+                          </div>
+                          <div
+                            className={`text-[10px] mt-0.5 leading-snug ${
+                              isSelected ? 'text-gray-300' : 'text-gray-500'
+                            }`}
+                          >
+                            {pkg.subtitle}
+                          </div>
+                        </div>
+                        <div
+                          className={`mt-2 pt-1.5 border-t ${
+                            isSelected ? 'border-white/15' : 'border-gray-100'
+                          }`}
+                        >
+                          {pkgPricing.hasBulkDiscount && (
+                            <div className="text-[10px] line-through text-red-400 font-bold tabular-nums">
+                              ₦{pkgPricing.regularSubtotal.toLocaleString()}
+                            </div>
+                          )}
+                          <div
+                            className={`text-xs sm:text-sm font-black tabular-nums ${
+                              isSelected ? 'text-[#F5C518]' : 'text-black'
+                            }`}
+                          >
+                            ₦{pkgPricing.subtotal.toLocaleString()}
+                          </div>
+                          {pkgPricing.hasBulkDiscount && (
+                            <div
+                              className={`text-[9px] font-bold mt-0.5 ${
+                                isSelected ? 'text-emerald-300' : 'text-emerald-700'
+                              }`}
+                            >
+                              Save ₦{pkgPricing.totalBulkDiscount.toLocaleString()} (₦5k/lock)
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Huge CTA Button */}
-              <div>
+              <div className="space-y-2.5">
                 <button
-                  onClick={onOrderClick}
-                  className="w-full py-4 px-6 rounded-xl bg-[#F5C518] hover:bg-[#E5B810] text-black font-black text-base uppercase tracking-wider border-2 border-black shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 cursor-pointer group"
+                  onClick={() => onOrderClick(selectedQuantity)}
+                  className="w-full py-4 px-6 rounded-xl bg-[#F5C518] hover:bg-[#E5B810] text-black font-black text-sm sm:text-base uppercase tracking-wider border-2 border-black shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 cursor-pointer group"
                 >
-                  <span>UPGRADE YOUR SECURITY TODAY!</span>
+                  <span>
+                    ORDER {selectedQuantity} {selectedQuantity === 1 ? 'LOCK' : 'LOCKS'} NOW — ₦{activePricing.subtotal.toLocaleString()}
+                  </span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
+
+                {onScrollToForm && (
+                  <button
+                    type="button"
+                    onClick={() => onScrollToForm(selectedQuantity)}
+                    className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-gray-100 text-gray-800 font-bold text-xs uppercase tracking-wider border border-gray-300 transition-colors cursor-pointer"
+                  >
+                    Or Fill Full Order Form Below ({selectedQuantity} {selectedQuantity === 1 ? 'Product' : 'Products'} · ₦{activePricing.subtotal.toLocaleString()}
+                    {activePricing.hasBulkDiscount ? ` · Saved ₦${activePricing.totalBulkDiscount.toLocaleString()}` : ''})
+                  </button>
+                )}
               </div>
 
               {/* Required Delivery & Installation Statement */}

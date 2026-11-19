@@ -29,11 +29,12 @@ export const PRODUCT_DATA = {
   tagline: "The Future of Home Security Is Here.",
   regularPrice: 250000,
   sellingPrice: 160000,
+  multiUnitDiscountPerUnit: 5000,
   currencySymbol: "₦",
   whatsappNumber: "2348147778029",
   whatsappDisplayNumber: "08147778029",
   defaultWhatsappMessage: "Hello Max Luxury, I'm interested in the A-01 Deadbolt Type Smart Lock. Please provide more details about delivery and installation.",
-  bannerImage: "/assets/aistudio/66526504-e15f-4f9f-b133-3debd5d0cd41_23068f74.png",
+  bannerImage: "/assets/aistudio/Hc659a48981584a37808c4ff71ace4e15Q_70d0fdaa.jpg",
   sidePillars: [
     "Built for reliability.",
     "Designed for you.",
@@ -63,7 +64,7 @@ export const PRODUCT_DATA = {
     { title: "EMERGENCY READY", description: "Emergency power port ensures access even in low battery." },
   ],
   images: {
-    banner: "/assets/aistudio/66526504-e15f-4f9f-b133-3debd5d0cd41_23068f74.png",
+    banner: "/assets/aistudio/Hc659a48981584a37808c4ff71ace4e15Q_70d0fdaa.jpg",
     main: "/assets/aistudio/Hc659a48981584a37808c4ff71ace4e15Q_70d0fdaa.jpg",
     biometrics: "/assets/aistudio/Hc076d8af20dd418aafe4240130117754c_13e4c416.png",
     camera: "/assets/aistudio/H7bf0cea8eeb14e8a91fa85994cf3ee32y_f2d9df07.png",
@@ -248,3 +249,42 @@ export const NIGERIAN_STATES = [
   "Yobe",
   "Zamfara",
 ];
+
+export interface OrderPricingBreakdown {
+  quantity: number;
+  baseUnitPrice: number;
+  discountPerUnit: number;
+  effectiveUnitPrice: number;
+  regularSubtotal: number;
+  totalBulkDiscount: number;
+  subtotal: number;
+  hasBulkDiscount: boolean;
+}
+
+/**
+ * Calculates order totals with ₦5,000 discount per product when buying 2 or more units.
+ * - 1 unit: ₦160,000/unit = ₦160,000
+ * - 2 units: ₦155,000/unit = ₦310,000 (Save ₦10,000)
+ * - 3 units: ₦155,000/unit = ₦465,000 (Save ₦15,000)
+ */
+export function calculateOrderPricing(quantity: number): OrderPricingBreakdown {
+  const safeQty = Math.max(1, Math.floor(quantity || 1));
+  const baseUnitPrice = PRODUCT_DATA.sellingPrice;
+  const hasBulkDiscount = safeQty > 1;
+  const discountPerUnit = hasBulkDiscount ? PRODUCT_DATA.multiUnitDiscountPerUnit : 0;
+  const effectiveUnitPrice = baseUnitPrice - discountPerUnit;
+  const regularSubtotal = baseUnitPrice * safeQty;
+  const totalBulkDiscount = discountPerUnit * safeQty;
+  const subtotal = effectiveUnitPrice * safeQty;
+
+  return {
+    quantity: safeQty,
+    baseUnitPrice,
+    discountPerUnit,
+    effectiveUnitPrice,
+    regularSubtotal,
+    totalBulkDiscount,
+    subtotal,
+    hasBulkDiscount,
+  };
+}

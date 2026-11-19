@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { PRODUCT_DATA, NIGERIAN_STATES } from '../data/productData';
+import React, { useState, useEffect } from 'react';
+import { PRODUCT_DATA, NIGERIAN_STATES, calculateOrderPricing } from '../data/productData';
 import {
   trackPurchase,
   trackLeadOrderSubmitted,
@@ -26,12 +26,19 @@ import {
   Building,
   Check,
 } from 'lucide-react';
+import { ChristmasPromoCountdown } from './ChristmasPromoCountdown';
 
 interface OrderFormProps {
   onSuccess?: () => void;
+  selectedQuantity?: number;
+  onQuantityChange?: (qty: number) => void;
 }
 
-export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
+export const OrderForm: React.FC<OrderFormProps> = ({
+  onSuccess,
+  selectedQuantity,
+  onQuantityChange,
+}) => {
   // Form fields
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -39,7 +46,19 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
   const [selectedState, setSelectedState] = useState('');
   const [city, setCity] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(selectedQuantity || 1);
+
+  useEffect(() => {
+    if (typeof selectedQuantity === 'number' && selectedQuantity >= 1) {
+      setQuantity(selectedQuantity);
+    }
+  }, [selectedQuantity]);
+
+  const updateQuantity = (nextQty: number) => {
+    const clamped = Math.max(1, Math.min(10, nextQty));
+    setQuantity(clamped);
+    if (onQuantityChange) onQuantityChange(clamped);
+  };
   const [doorType, setDoorType] = useState('Wooden Door');
   const [installationRequired, setInstallationRequired] = useState<'Yes' | 'No' | 'Need Advice'>('Need Advice');
   const [additionalInstructions, setAdditionalInstructions] = useState('');
@@ -62,9 +81,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
     timestamp: string;
   } | null>(null);
 
-  // Dynamic calculations
-  const unitPrice = PRODUCT_DATA.sellingPrice;
-  const subtotal = unitPrice * quantity;
+  // Dynamic calculations (₦5,000 off per product when buying 2+)
+  const pricing = calculateOrderPricing(quantity);
+  const unitPrice = pricing.effectiveUnitPrice;
+  const baseUnitPrice = pricing.baseUnitPrice;
+  const subtotal = pricing.subtotal;
 
   // Real-time validation touched tracking
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -134,6 +155,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
       product: PRODUCT_DATA.productName,
       unitPrice: `₦${unitPrice.toLocaleString()}`,
       quantity: quantity,
+      bulkDiscount: pricing.hasBulkDiscount ? `₦${pricing.totalBulkDiscount.toLocaleString()} (₦5,000 off each)` : 'None',
       subtotal: `₦${subtotal.toLocaleString()}`,
       deliveryFee: 'To Be Confirmed',
       paymentMethod: 'Payment on Delivery',
@@ -188,6 +210,8 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
           product: PRODUCT_DATA.productName,
           model: 'A-01 DEADBOLT TYPE SMART LOCK',
           quantity: quantity,
+          unitPrice: `₦${unitPrice.toLocaleString()}`,
+          bulkDiscount: pricing.hasBulkDiscount ? `₦${pricing.totalBulkDiscount.toLocaleString()} (₦5,000 off each)` : 'None',
           subtotal: `₦${subtotal.toLocaleString()}`,
           doorType: doorType,
           installationRequired: installationRequired,
@@ -331,9 +355,12 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
             ORDER YOUR A-01 DEADBOLT SMART LOCK.
           </h2>
           <p className="mt-3 text-base text-gray-700 font-medium">
-            Smart Access. Secure Every Day. Secure your lock at the official promo price of <strong className="text-black bg-[#FFF9D6] border border-[#F5C518] px-2 py-0.5 rounded">₦{unitPrice.toLocaleString()}</strong>. Pay only after delivery and physical inspection.
+            Smart Access. Secure Every Day. Lock in your A-01 during our 2-Day Christmas Promo at <strong className="text-black bg-[#FFF9D6] border border-[#F5C518] px-2 py-0.5 rounded">₦{unitPrice.toLocaleString()}</strong>. Pay only after delivery and physical inspection.
           </p>
         </div>
+
+        {/* 2-Day Christmas Promo Urgency Strip */}
+        <ChristmasPromoCountdown variant="banner" className="mb-8" />
 
         {/* 3 Quick Step Indicator */}
         <div className="grid grid-cols-3 gap-3 mb-8 text-center">
@@ -462,6 +489,80 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Quick 1-Tap Package Selector: 1, 2, or 3 Products */}
+              <div className="md:col-span-2 p-4 sm:p-5 rounded-2xl bg-white border-2 border-black/15 space-y-3 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-black text-black uppercase tracking-wider">
+                    Step 1 · Choose How Many Locks You Need
+                  </span>
+                  <span className="text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-0.5 rounded">
+                    ₦5,000 OFF each when buying 2+
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { qty: 1, label: '1 Product', desc: 'Single Entrance Door', tag: null },
+                    { qty: 2, label: '2 Products', desc: '₦155,000 each · Save ₦10k', tag: 'Save ₦10,000' },
+                    { qty: 3, label: '3 Products', desc: '₦155,000 each · Save ₦15k', tag: 'Save ₦15,000' },
+                  ].map((option) => {
+                    const isSelected = quantity === option.qty;
+                    const optPricing = calculateOrderPricing(option.qty);
+                    return (
+                      <button
+                        key={option.qty}
+                        type="button"
+                        onClick={() => updateQuantity(option.qty)}
+                        className={`relative p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer flex items-center sm:flex-col sm:items-start justify-between gap-2 ${
+                          isSelected
+                            ? 'bg-black text-white border-[#F5C518] shadow-lg ring-2 ring-[#F5C518]/40'
+                            : 'bg-gray-50 text-black border-gray-300 hover:border-black hover:bg-white'
+                        }`}
+                      >
+                        {option.tag && (
+                          <span
+                            className={`sm:absolute sm:-top-2.5 sm:right-2.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              isSelected ? 'bg-[#F5C518] text-black' : 'bg-black text-[#F5C518]'
+                            }`}
+                          >
+                            {option.tag}
+                          </span>
+                        )}
+                        <div>
+                          <div className="text-sm font-black flex items-center gap-2">
+                            <span
+                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                isSelected ? 'border-[#F5C518] bg-[#F5C518]' : 'border-gray-400'
+                              }`}
+                            >
+                              {isSelected && <Check className="w-3 h-3 text-black stroke-[3]" />}
+                            </span>
+                            <span>{option.label}</span>
+                          </div>
+                          <div className={`text-[11px] pl-6 mt-0.5 ${isSelected ? 'text-emerald-300 font-bold' : 'text-gray-600'}`}>
+                            {option.desc}
+                          </div>
+                        </div>
+                        <div className="text-right sm:text-left sm:pl-6">
+                          {optPricing.hasBulkDiscount && (
+                            <span className="text-[11px] line-through text-red-400 font-bold mr-2 tabular-nums">
+                              ₦{optPricing.regularSubtotal.toLocaleString()}
+                            </span>
+                          )}
+                          <span
+                            className={`text-base sm:text-lg font-black tabular-nums ${
+                              isSelected ? 'text-[#F5C518]' : 'text-black'
+                            }`}
+                          >
+                            ₦{optPricing.subtotal.toLocaleString()}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Full Name */}
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-black flex items-center justify-between uppercase tracking-wider">
@@ -684,18 +785,18 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                 </div>
               </div>
 
-              {/* Quantity */}
+              {/* Custom Quantity Stepper (for 4+ or fine adjustment) */}
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-black flex items-center justify-between uppercase tracking-wider">
-                  <span>Quantity</span>
+                  <span>Exact Quantity</span>
                   <span className="text-xs text-black font-black bg-[#F5C518] px-2 py-0.5 rounded">
-                    ₦{unitPrice.toLocaleString()} / lock
+                    {quantity} {quantity === 1 ? 'Product' : 'Products'}
                   </span>
                 </label>
                 <div className="flex items-center gap-3 bg-white border-2 border-gray-300 rounded-xl p-1.5">
                   <button
                     type="button"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    onClick={() => updateQuantity(quantity - 1)}
                     className="w-10 h-10 rounded-lg bg-gray-100 hover:bg-black hover:text-white text-black font-black flex items-center justify-center transition-colors cursor-pointer text-lg"
                   >
                     -
@@ -705,7 +806,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                    onClick={() => updateQuantity(quantity + 1)}
                     className="w-10 h-10 rounded-lg bg-[#F5C518] hover:bg-[#E5B810] text-black font-black flex items-center justify-center transition-colors cursor-pointer text-lg"
                   >
                     +
@@ -832,6 +933,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                 <div className="py-2 flex justify-between text-gray-700">
                   <span>Unit Price:</span>
                   <span className="font-bold text-black tabular-nums">
+                    {pricing.hasBulkDiscount && (
+                      <span className="line-through text-gray-400 mr-2 font-medium">
+                        ₦{baseUnitPrice.toLocaleString()}
+                      </span>
+                    )}
                     ₦{unitPrice.toLocaleString()}
                   </span>
                 </div>
@@ -839,11 +945,26 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onSuccess }) => {
                   <span>Selected Quantity:</span>
                   <span className="font-bold text-black tabular-nums">{quantity} Unit(s)</span>
                 </div>
+                {pricing.hasBulkDiscount && (
+                  <div className="py-2 flex justify-between text-emerald-700 bg-emerald-50/70 px-2 rounded-lg">
+                    <span className="font-bold">Multi-Unit Bundle Discount (₦5k/lock):</span>
+                    <span className="font-black tabular-nums">
+                      -₦{pricing.totalBulkDiscount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
                 <div className="py-3 flex justify-between items-baseline text-black bg-yellow-50 px-3 rounded-xl border border-yellow-200 my-1">
                   <span className="font-black text-sm uppercase">Total Subtotal:</span>
-                  <span className="font-black text-2xl sm:text-3xl text-black tabular-nums font-heading">
-                    ₦{subtotal.toLocaleString()}
-                  </span>
+                  <div className="text-right">
+                    {pricing.hasBulkDiscount && (
+                      <span className="text-xs line-through text-gray-500 font-bold mr-2 tabular-nums">
+                        ₦{pricing.regularSubtotal.toLocaleString()}
+                      </span>
+                    )}
+                    <span className="font-black text-2xl sm:text-3xl text-black tabular-nums font-heading">
+                      ₦{subtotal.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
                 <div className="py-2 flex justify-between items-center text-gray-700">
                   <span>Delivery Fee:</span>

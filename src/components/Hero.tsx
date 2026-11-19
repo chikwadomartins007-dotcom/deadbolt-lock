@@ -23,6 +23,7 @@ import {
   Zap,
   Truck,
 } from 'lucide-react';
+import { ChristmasPromoCountdown } from './ChristmasPromoCountdown';
 
 interface HeroProps {
   onOrderClick: () => void;
@@ -31,12 +32,6 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ onOrderClick, onExploreClick }) => {
   const heroSlides = [
-    {
-      image: PRODUCT_DATA.bannerImage,
-      title: 'A-01 Deadbolt Smart Lock Master Overview',
-      badge: 'Official Master Banner',
-      highlight: 'Sleek Design. Advanced Protection.',
-    },
     {
       image: PRODUCT_DATA.images.main,
       title: 'Dual Panels & Tuya Mobile App',
@@ -149,6 +144,9 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick, onExploreClick }) => {
               Equipped with high-precision 3D facial recognition, palm vein sensor, semiconductor fingerprint reader, 4.0-inch HD interior screen, and Tuya smartphone control.
             </p>
 
+            {/* 2-DAY CHRISTMAS PROMO COUNTDOWN BANNER */}
+            <ChristmasPromoCountdown variant="banner" />
+
             {/* PRICE CAPSULE (White Surface with Bold High Contrast) */}
             <div className="p-5 sm:p-6 rounded-3xl bg-white border-2 border-black shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 bg-[#F5C518] text-black text-[11px] font-black uppercase px-4 py-1 rounded-bl-2xl tracking-wider shadow">
@@ -159,7 +157,7 @@ export const Hero: React.FC<HeroProps> = ({ onOrderClick, onExploreClick }) => {
                 <div>
                   <div className="text-xs uppercase tracking-widest font-black text-[#0088A8] mb-1 flex items-center gap-1.5 font-mono">
                     <Zap className="w-3.5 h-3.5 fill-current" />
-                    SPECIAL PROMO PRICE:
+                    2-DAY CHRISTMAS PROMO PRICE:
                   </div>
                   <div className="flex items-baseline gap-3">
                     <span className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#101010] tabular-nums font-heading tracking-tight">

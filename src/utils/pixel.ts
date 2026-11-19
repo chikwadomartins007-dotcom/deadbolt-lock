@@ -381,12 +381,14 @@ export function trackInitiateCheckout(
     content_ids: ['A-01-DEADBOLT-LOCK'],
   };
 
+  const effectiveUnitPrice = quantity > 0 ? Math.round(value / quantity) : 160000;
+
   const tikTokCustomData = {
     content_id: 'A-01-DEADBOLT-LOCK',
     content_type: 'product',
     content_name: 'A-01 Deadbolt Type Smart Lock',
     quantity: quantity,
-    price: 160000,
+    price: effectiveUnitPrice,
     value: value,
     currency: currency,
     contents: [
@@ -395,7 +397,7 @@ export function trackInitiateCheckout(
         content_name: 'A-01 Deadbolt Type Smart Lock',
         content_category: 'Smart Home Security',
         quantity: quantity,
-        price: 160000,
+        price: effectiveUnitPrice,
       },
     ],
   };
@@ -468,14 +470,17 @@ export function trackPurchase(
     normalizedPhone = '234' + cleanPhone;
   }
 
+  const orderQty = userData.quantity || 1;
+  const effectiveUnitPrice = orderQty > 0 ? Math.round(value / orderQty) : 160000;
+
   const tikTokPurchaseData = {
     content_id: 'A-01-DEADBOLT-LOCK',
     content_type: 'product',
     content_name: 'A-01 Deadbolt Type Smart Lock',
     content_category: 'Smart Home Security',
     order_id: orderRef,
-    quantity: userData.quantity || 1,
-    price: 160000,
+    quantity: orderQty,
+    price: effectiveUnitPrice,
     value: value,
     currency: currency,
     status: 'payment_on_delivery',
@@ -485,8 +490,8 @@ export function trackPurchase(
         content_type: 'product',
         content_name: 'A-01 Deadbolt Type Smart Lock',
         content_category: 'Smart Home Security',
-        quantity: userData.quantity || 1,
-        price: 160000,
+        quantity: orderQty,
+        price: effectiveUnitPrice,
       },
     ],
   };

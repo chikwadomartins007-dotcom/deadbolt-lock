@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { PRODUCT_DATA } from './data/productData';
+import { PRODUCT_DATA, calculateOrderPricing } from './data/productData';
 import { initAllPixels, trackViewContent, trackInitiateCheckout, trackPurchase } from './utils/pixel';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -27,6 +27,7 @@ import { ScrollProgressBar } from './components/ScrollProgressBar';
 export default function App() {
   const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
   const [hasCompletedOrder, setHasCompletedOrder] = useState(false);
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
 
   useEffect(() => {
     // Initialize both Meta Pixel (1690563088540181) and TikTok Pixel (DBNK5NJC77U6CGRG7ETG)
@@ -49,8 +50,13 @@ export default function App() {
     }
   }, []);
 
-  const openQuickOrder = () => {
-    trackInitiateCheckout(PRODUCT_DATA.sellingPrice, 'NGN', 1);
+  const openQuickOrder = (qtyOrEvent?: number | unknown) => {
+    const qty = typeof qtyOrEvent === 'number' && qtyOrEvent >= 1 ? qtyOrEvent : selectedQuantity;
+    if (typeof qtyOrEvent === 'number' && qtyOrEvent >= 1) {
+      setSelectedQuantity(qtyOrEvent);
+    }
+    const { subtotal } = calculateOrderPricing(qty);
+    trackInitiateCheckout(subtotal, 'NGN', qty);
     setIsQuickOrderOpen(true);
   };
 
@@ -69,8 +75,13 @@ export default function App() {
     }
   }, [isQuickOrderOpen, hasCompletedOrder]);
 
-  const scrollToOrder = () => {
-    trackInitiateCheckout(PRODUCT_DATA.sellingPrice, 'NGN', 1);
+  const scrollToOrder = (qtyOrEvent?: number | unknown) => {
+    const qty = typeof qtyOrEvent === 'number' && qtyOrEvent >= 1 ? qtyOrEvent : selectedQuantity;
+    if (typeof qtyOrEvent === 'number' && qtyOrEvent >= 1) {
+      setSelectedQuantity(qtyOrEvent);
+    }
+    const { subtotal } = calculateOrderPricing(qty);
+    trackInitiateCheckout(subtotal, 'NGN', qty);
     const element = document.getElementById('order-form');
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -118,10 +129,18 @@ export default function App() {
         <TechnicalSpecs onOrderClick={openQuickOrder} />
 
         {/* 9. Product Price and Special Offer */}
-        <PricingSection onOrderClick={openQuickOrder} />
+        <PricingSection
+          selectedQuantity={selectedQuantity}
+          onSelectQuantity={setSelectedQuantity}
+          onOrderClick={(qty) => openQuickOrder(qty)}
+          onScrollToForm={(qty) => scrollToOrder(qty)}
+        />
 
         {/* 10. High-Converting Customer Order Form (WhatsApp appears only after order is placed) */}
-        <OrderForm />
+        <OrderForm
+          selectedQuantity={selectedQuantity}
+          onQuantityChange={setSelectedQuantity}
+        />
 
         {/* 11. Customer Reviews / Brand Benefits */}
         <BrandBenefits onOrderClick={openQuickOrder} />
@@ -153,6 +172,8 @@ export default function App() {
         isOpen={isQuickOrderOpen}
         onClose={() => setIsQuickOrderOpen(false)}
         onOrderSuccess={() => setHasCompletedOrder(true)}
+        selectedQuantity={selectedQuantity}
+        onQuantityChange={setSelectedQuantity}
       />
 
       {/* Sticky Mobile Buy Bar */}

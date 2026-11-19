@@ -14,18 +14,6 @@ interface GalleryItem {
 export const ImageGallery: React.FC = () => {
   const galleryItems: GalleryItem[] = [
     {
-      id: 'a01-master-banner',
-      title: 'A-01 Deadbolt Type Smart Lock: Master Specification Banner',
-      category: '00 · Official Model Master Overview',
-      image: PRODUCT_DATA.bannerImage,
-      caption: 'Official specification and feature diagram: Smart Access. Secure Every Day. Features 12 hardware callouts including Face Recognition Cat Eye Camera, 4.0" interior screen, semiconductor fingerprint, and Tuya app.',
-      bulletPoints: [
-        'Model: A-01 Deadbolt Type Smart Lock with sleek obsidian design',
-        '12 Core hardware modules: Facial cat eye camera, display screen, semiconductor fingerprint sensor',
-        '5 Security pillars: Multiple Access, Smart Control, Reliable Security, Easy Installation, Emergency Ready',
-      ],
-    },
-    {
       id: 'main-panels',
       title: 'Complete Dual Panel System & Tuya Mobile App',
       category: '01 · Interior & Exterior Panels',

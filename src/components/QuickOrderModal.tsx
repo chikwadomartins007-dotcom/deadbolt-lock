@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PRODUCT_DATA, NIGERIAN_STATES } from '../data/productData';
+import { PRODUCT_DATA, NIGERIAN_STATES, calculateOrderPricing } from '../data/productData';
 import {
   trackPurchase,
   trackLeadOrderSubmitted,
@@ -26,14 +26,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { ChristmasPromoCountdown } from './ChristmasPromoCountdown';
 
 export const POPUP_PRODUCT_IMAGES = [
-  {
-    src: PRODUCT_DATA.bannerImage,
-    title: 'A-01 Deadbolt Type Smart Lock',
-    badge: 'Master View',
-    subtitle: 'Sleek obsidian finish with dual smart panels',
-  },
   {
     src: PRODUCT_DATA.images.main,
     title: 'Dual Panels & Smartphone App',
@@ -88,12 +83,16 @@ interface QuickOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOrderSuccess?: () => void;
+  selectedQuantity?: number;
+  onQuantityChange?: (qty: number) => void;
 }
 
 export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   isOpen,
   onClose,
   onOrderSuccess,
+  selectedQuantity,
+  onQuantityChange,
 }) => {
   // Form fields
   const [fullName, setFullName] = useState('');
@@ -101,8 +100,20 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [selectedState, setSelectedState] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(selectedQuantity || 1);
   const [doorType, setDoorType] = useState('Wooden Door');
+
+  useEffect(() => {
+    if (typeof selectedQuantity === 'number' && selectedQuantity >= 1) {
+      setQuantity(selectedQuantity);
+    }
+  }, [selectedQuantity, isOpen]);
+
+  const updateQuantity = (nextQty: number) => {
+    const clamped = Math.max(1, Math.min(10, nextQty));
+    setQuantity(clamped);
+    if (onQuantityChange) onQuantityChange(clamped);
+  };
 
   // Changing product images in popup
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -162,8 +173,9 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
 
   if (!isOpen) return null;
 
-  const unitPrice = PRODUCT_DATA.sellingPrice;
-  const subtotal = unitPrice * quantity;
+  const pricing = calculateOrderPricing(quantity);
+  const unitPrice = pricing.effectiveUnitPrice;
+  const subtotal = pricing.subtotal;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,6 +216,7 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       product: PRODUCT_DATA.productName,
       unitPrice: `₦${unitPrice.toLocaleString()}`,
       quantity: quantity,
+      bulkDiscount: pricing.hasBulkDiscount ? `₦${pricing.totalBulkDiscount.toLocaleString()} (₦5,000 off each)` : 'None',
       subtotal: `₦${subtotal.toLocaleString()}`,
       deliveryFee: 'To Be Confirmed',
       paymentMethod: 'Payment on Delivery',
@@ -257,6 +270,8 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           product: PRODUCT_DATA.productName,
           model: 'A-01 DEADBOLT TYPE SMART LOCK',
           quantity: quantity,
+          unitPrice: `₦${unitPrice.toLocaleString()}`,
+          bulkDiscount: pricing.hasBulkDiscount ? `₦${pricing.totalBulkDiscount.toLocaleString()} (₦5,000 off each)` : 'None',
           subtotal: `₦${subtotal.toLocaleString()}`,
           doorType: doorType,
           paymentMethod: 'Payment on Delivery',
@@ -501,6 +516,9 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
               Smart Access. Secure Every Day.
             </p>
 
+            {/* Compact 2-Day Christmas Promo Countdown */}
+            <ChristmasPromoCountdown variant="compact" className="mt-2.5" />
+
             {/* Mini Product Bar with AUTO-CHANGING Image Slideshow */}
             <div className="mt-3 p-3 bg-gray-50 border-2 border-black/10 rounded-2xl shadow-sm">
               <div className="flex items-center gap-3">
@@ -635,6 +653,63 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
             )}
 
             <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
+              {/* Quick 1-Tap Package Selector: 1, 2, or 3 Products */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center justify-between font-mono">
+                  <span>Select Package (2+ = ₦5k OFF Each)</span>
+                  <span className="text-[11px] font-black text-black bg-[#F5C518] px-2 py-0.5 rounded">
+                    {quantity} {quantity === 1 ? 'Lock' : 'Locks'}
+                  </span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { qty: 1, label: '1 Product', tag: null },
+                    { qty: 2, label: '2 Products', tag: 'Save ₦10k' },
+                    { qty: 3, label: '3 Products', tag: 'Save ₦15k' },
+                  ].map((opt) => {
+                    const isSelected = quantity === opt.qty;
+                    const optPricing = calculateOrderPricing(opt.qty);
+                    return (
+                      <button
+                        key={opt.qty}
+                        type="button"
+                        onClick={() => updateQuantity(opt.qty)}
+                        className={`relative py-2 px-2 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-black text-white border-[#F5C518] shadow-md'
+                            : 'bg-gray-50 text-black border-gray-300 hover:border-black'
+                        }`}
+                      >
+                        {opt.tag && (
+                          <span
+                            className={`absolute -top-2 right-1.5 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
+                              isSelected ? 'bg-[#F5C518] text-black' : 'bg-black text-[#F5C518]'
+                            }`}
+                          >
+                            {opt.tag}
+                          </span>
+                        )}
+                        <div className="text-xs font-black">{opt.label}</div>
+                        <div className="flex items-baseline justify-center gap-1">
+                          {optPricing.hasBulkDiscount && (
+                            <span className="text-[9px] line-through text-red-400 font-bold tabular-nums">
+                              ₦{Math.round(optPricing.regularSubtotal / 1000)}k
+                            </span>
+                          )}
+                          <span
+                            className={`text-[11px] font-black tabular-nums ${
+                              isSelected ? 'text-[#F5C518]' : 'text-gray-900'
+                            }`}
+                          >
+                            ₦{optPricing.subtotal.toLocaleString()}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Full Name with Validation Icons */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1 font-mono">
@@ -755,12 +830,12 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
 
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex justify-between font-mono">
-                    <span>Quantity</span>
+                    <span>Exact Qty</span>
                   </label>
                   <div className="flex items-center gap-2 bg-white border-2 border-gray-300 rounded-xl p-1">
                     <button
                       type="button"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      onClick={() => updateQuantity(quantity - 1)}
                       className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-black hover:text-white text-black font-black flex items-center justify-center transition-colors cursor-pointer text-sm"
                     >
                       -
@@ -770,7 +845,7 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                     </div>
                     <button
                       type="button"
-                      onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                      onClick={() => updateQuantity(quantity + 1)}
                       className="w-8 h-8 rounded-lg bg-[#F5C518] hover:bg-[#E5B810] text-black font-black flex items-center justify-center transition-colors cursor-pointer text-sm"
                     >
                       +
@@ -846,9 +921,21 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                   <span className="text-[10px] uppercase font-mono font-bold text-gray-700 block">
                     Total Amount (Pay on Delivery)
                   </span>
-                  <span className="text-xl font-black text-black tabular-nums font-heading">
-                    ₦{subtotal.toLocaleString()}
-                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xl font-black text-black tabular-nums font-heading">
+                      ₦{subtotal.toLocaleString()}
+                    </span>
+                    {pricing.hasBulkDiscount && (
+                      <span className="text-xs line-through text-gray-500 font-bold tabular-nums">
+                        ₦{pricing.regularSubtotal.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                  {pricing.hasBulkDiscount && (
+                    <span className="text-[10px] font-extrabold text-emerald-800 block mt-0.5">
+                      ₦{pricing.totalBulkDiscount.toLocaleString()} bundle discount applied (₦{unitPrice.toLocaleString()}/lock)
+                    </span>
+                  )}
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-black font-black bg-[#F5C518] border border-black/20 px-2.5 py-1 rounded shadow-sm">
